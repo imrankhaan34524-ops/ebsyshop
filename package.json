@@ -1,4 +1,9 @@
+
 {
+
+  "trustedDependencies": [
+    "@tailwindcss/oxide"
+],
   "name": "shop",
   "version": "0.1.0",
   "private": true,
