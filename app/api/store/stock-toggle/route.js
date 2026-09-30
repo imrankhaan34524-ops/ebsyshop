@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {prisma} from "@/lib/prisma";
-import authSeller from "@/middlewares/authSeller";
+import authSeller from "@/middlewears/authSeller";
 import { getAuth } from "@clerk/nextjs/server";
 
 // toggle stock of a product
