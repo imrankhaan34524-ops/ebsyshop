@@ -2,7 +2,7 @@ import { getAuth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import authAdmin from "@/middlewears/authAdmin"
 import {prisma} from "@/lib/prisma"
-
+import { inngest } from "@/inngest/client";
 
 export async function POST(request) {
     try {

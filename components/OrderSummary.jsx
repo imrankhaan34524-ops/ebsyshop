@@ -4,10 +4,14 @@ import AddressModal from './AddressModal';
 import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { Show ,useAuth, useUser } from "@clerk/nextjs"
+import axios from 'axios';
 
-const OrderSummary = ({ totalPrice, items }) => {
+const OrderSummary = ({ totalPrice, items }) => { 
 
-    const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
+     const {user}= useUser();
+     const {getToken} = useAuth();
+    const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || 'Rs.';
 
     const router = useRouter();
 
@@ -19,15 +23,55 @@ const OrderSummary = ({ totalPrice, items }) => {
     const [couponCodeInput, setCouponCodeInput] = useState('');
     const [coupon, setCoupon] = useState('');
 
-    const handleCouponCode = async (event) => {
-        event.preventDefault();
-        
+  const handleCouponCode = async (event) => {
+  event.preventDefault();
+  try {
+    if (!user) {
+      return toast('Please login to proceed')
     }
+    const token = await getToken();
+    const { data } = await axios.post('/api/coupon', { code: couponCodeInput }, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    setCoupon(data.coupon)
+    toast.success('Coupon Applied')
+  } catch (error) {
+    toast.error(error?.response?.data?.error || error.message)
+  }
+}
 
     const handlePlaceOrder = async (e) => {
         e.preventDefault();
+        try {
+            if (!user) {
+                return toast('Please login to place order')
+            }
+            if (!selectedAddress) {
+                return toast('Please select an address')
+            }
 
-        router.push('/orders')
+            const token = await getToken();
+
+            const orderData = {
+                addressId: selectedAddress.id,
+                items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
+                couponCode: coupon ? coupon.code : null,
+                paymentMethod,
+            }
+
+            const { data } = await axios.post('/api/orders', orderData, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+
+            if (paymentMethod === 'STRIPE') {
+                window.location.href = data.session.url
+            } else {
+                toast.success(data.message)
+                router.push('/orders')
+            }
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error.message)
+        }
     }
 
     return (
@@ -35,7 +79,7 @@ const OrderSummary = ({ totalPrice, items }) => {
             <h2 className='text-xl font-medium text-slate-600'>Payment Summary</h2>
             <p className='text-slate-400 text-xs my-4'>Payment Method</p>
             <div className='flex gap-2 items-center'>
-                <input type="radio" id="COD" onChange={() => setPaymentMethod('COD')} checked={paymentMethod === 'COD'} className='accent-gray-500' />
+                <input type="radio" id="COD" name='payment' onChange={() => setPaymentMethod('COD')} checked={paymentMethod === 'COD'} className='accent-gray-500' />
                 <label htmlFor="COD" className='cursor-pointer'>COD</label>
             </div>
             <div className='flex gap-2 items-center mt-1'>
@@ -77,8 +121,8 @@ const OrderSummary = ({ totalPrice, items }) => {
                         {coupon && <p>Coupon:</p>}
                     </div>
                     <div className='flex flex-col gap-1 font-medium text-right'>
-                        <p>{currency}{totalPrice.toLocaleString()}</p>
-                        <p>Free</p>
+                       <p>{currency}{totalPrice.toLocaleString('en-PK')}</p>
+                  <p><Show when={{ plan: 'members' }} fallback={`${currency}199`}>Free</Show></p>
                         {coupon && <p>{`-${currency}${(coupon.discount / 100 * totalPrice).toFixed(2)}`}</p>}
                     </div>
                 </div>
@@ -99,8 +143,16 @@ const OrderSummary = ({ totalPrice, items }) => {
             </div>
             <div className='flex justify-between py-4'>
                 <p>Total:</p>
-                <p className='font-medium text-right'>{currency}{coupon ? (totalPrice - (coupon.discount / 100 * totalPrice)).toFixed(2) : totalPrice.toLocaleString()}</p>
+                <p className='font-medium text-right'>
+                    <Show when={{ plan: 'members' }} fallback={`${currency}${coupon ?
+                    (totalPrice + 199 - (coupon.discount / 100 * totalPrice)).toFixed
+                    (2) : (totalPrice + 199).toLocaleString()}`}>
+                    {currency}{coupon ? (totalPrice - (coupon.discount / 100 *
+                    totalPrice)).toFixed(2) : totalPrice.toLocaleString()}
+                    </Show>
+                </p>
             </div>
+
             <button onClick={e => toast.promise(handlePlaceOrder(e), { loading: 'placing Order...' })} className='w-full bg-slate-700 text-white py-2.5 rounded hover:bg-slate-900 active:scale-95 transition-all'>Place Order</button>
 
             {showAddressModal && <AddressModal setShowAddressModal={setShowAddressModal} />}
@@ -108,5 +160,5 @@ const OrderSummary = ({ totalPrice, items }) => {
         </div>
     )
 }
-
+ 
 export default OrderSummary

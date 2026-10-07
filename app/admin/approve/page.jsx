@@ -30,8 +30,7 @@ const fetchStores = async () => {
     const handleApprove = async ({ storeId, status }) => {
     try {
         const token = await getToken()
-        const { data } = await axios.post('/api/admin/approve-store', {storeId,
-        status}, {
+        const { data } = await axios.post('/api/admin/approve-store', {storeId, status}, {
             headers: { Authorization: `Bearer ${token}` }
         })
         toast.success(data.message)

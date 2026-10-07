@@ -1,9 +1,17 @@
 'use client'
+'use client'
+import { useAuth } from "@clerk/nextjs"
 import { XIcon } from "lucide-react"
 import { useState } from "react"
 import { toast } from "react-hot-toast"
+import { useDispatch } from "react-redux"
+import axios from "axios"
+import { addAddress } from "@/lib/features/address/addressSlice"
 
 const AddressModal = ({ setShowAddressModal }) => {
+
+    const {getToken} =useAuth()
+    const dispatch = useDispatch()
 
     const [address, setAddress] = useState({
         name: '',
@@ -23,12 +31,20 @@ const AddressModal = ({ setShowAddressModal }) => {
         })
     }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-
+   const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+        const token = await getToken()
+        const { data } = await axios.post('/api/address', {address}, {headers:
+        { Authorization: `Bearer ${token}` } })
+        dispatch(addAddress(data.newAddress))
+        toast.success(data.message)
         setShowAddressModal(false)
+    } catch (error) {
+        console.log(error)
+        toast.error(error?.response?.data?.message || error.message)
     }
-
+}
     return (
         <form onSubmit={e => toast.promise(handleSubmit(e), { loading: 'Adding Address...' })} className="fixed inset-0 z-50 bg-white/60 backdrop-blur h-screen flex items-center justify-center">
             <div className="flex flex-col gap-5 text-slate-700 w-full max-w-sm mx-6">
