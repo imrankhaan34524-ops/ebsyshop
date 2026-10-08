@@ -1,22 +1,331 @@
 @import "tailwindcss";
 
+/* Makes Tailwind's dark: classes follow the data-theme toggle */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @layer components {
     @keyframes marqueeScroll {
-        0% {
-            transform: translateX(0%);
-        }
-        100% {
-            transform: translateX(-50%);
-        }
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-50%); }
     }
 }
 
 @layer base {
-    button {
-        cursor: pointer;
-    }
+    button { cursor: pointer; }
 }
 
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* =========================================================
+   THEME COLORS
+   ========================================================= */
+:root {
+  --bg: #ffffff;
+  --text: #1a1a1a;
+  --brand-gradient: linear-gradient(90deg, #8b5cf6 0%, #9333ea 50%, #e0734f 100%);
+}
+
+[data-theme="dark"] {
+  --bg: #0b1020;
+  --text: #f5f3ff;
+  color-scheme: dark; /* dark scrollbars, checkboxes, date pickers */
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Dark background: CHANGE YOUR CHOSEN COLORS HERE */
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(34, 197, 94, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 85% 100%, rgba(99, 102, 241, 0.18) 0%, transparent 45%),
+    linear-gradient(135deg, #0a0f0d 0%, #111a17 50%, #161b2e 100%);
+  background-attachment: fixed;
+}
+
+.gradient-brand { background: var(--brand-gradient); color: #fff; }
+
+.gradient-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* =========================================================
+   DARK MODE: TEXT
+   ========================================================= */
+[data-theme="dark"] .text-slate-300,
+[data-theme="dark"] .text-slate-400,
+[data-theme="dark"] .text-slate-500,
+[data-theme="dark"] .text-slate-600,
+[data-theme="dark"] .text-gray-400,
+[data-theme="dark"] .text-gray-500 {
+  color: #d8d0f0 !important;
+}
+
+[data-theme="dark"] .text-slate-700,
+[data-theme="dark"] .text-slate-800,
+[data-theme="dark"] .text-slate-900,
+[data-theme="dark"] .text-gray-600,
+[data-theme="dark"] .text-gray-700,
+[data-theme="dark"] .text-gray-800,
+[data-theme="dark"] .text-gray-900,
+[data-theme="dark"] .text-black {
+  color: #f5f3ff !important;
+}
+
+[data-theme="dark"] .text-green-600,
+[data-theme="dark"] .text-green-700,
+[data-theme="dark"] .text-green-800,
+[data-theme="dark"] .text-green-900 { color: #86efac !important; }
+
+[data-theme="dark"] .text-orange-600,
+[data-theme="dark"] .text-orange-700,
+[data-theme="dark"] .text-orange-800,
+[data-theme="dark"] .text-orange-900 { color: #fdba74 !important; }
+
+[data-theme="dark"] .text-purple-600,
+[data-theme="dark"] .text-purple-700,
+[data-theme="dark"] .text-purple-800,
+[data-theme="dark"] .text-indigo-600,
+[data-theme="dark"] .text-indigo-700,
+[data-theme="dark"] .text-indigo-800 { color: #c4b5fd !important; }
+
+[data-theme="dark"] .text-blue-600,
+[data-theme="dark"] .text-blue-700,
+[data-theme="dark"] .text-blue-800 { color: #93c5fd !important; }
+
+[data-theme="dark"] .text-red-500,
+[data-theme="dark"] .text-red-600,
+[data-theme="dark"] .text-red-700 { color: #fca5a5 !important; }
+
+/* Text on solid colored buttons / badges stays white */
+[data-theme="dark"] .bg-green-500,
+[data-theme="dark"] .bg-green-600,
+[data-theme="dark"] .bg-indigo-500,
+[data-theme="dark"] .bg-indigo-600,
+[data-theme="dark"] .bg-slate-600,
+[data-theme="dark"] .bg-slate-700,
+[data-theme="dark"] .bg-slate-800,
+[data-theme="dark"] .gradient-brand {
+  color: #ffffff !important;
+}
+
+/* Gradient TEXT only (headings with bg-clip-text) */
+[data-theme="dark"] .bg-clip-text[class*="from-slate-"],
+[data-theme="dark"] .bg-clip-text[class*="from-gray-"],
+[data-theme="dark"] .bg-clip-text[class*="from-zinc-"] {
+  --tw-gradient-from: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .bg-clip-text[class*="via-slate-"],
+[data-theme="dark"] .bg-clip-text[class*="via-gray-"] {
+  --tw-gradient-via: #e2e8f0 !important;
+}
+
+/* =========================================================
+   DARK MODE: BACKGROUNDS
+   ========================================================= */
+
+/* White / light gray boxes become translucent glass panels */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .bg-slate-50,
+[data-theme="dark"] .bg-slate-100,
+[data-theme="dark"] .bg-gray-50,
+[data-theme="dark"] .bg-gray-100 {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .site-navbar {
+  background-color: rgba(10, 15, 13, 0.85) !important;
+}
+
+/* Light tinted boxes (exact classes only, so bg-green-500 etc. are NOT affected) */
+[data-theme="dark"] :is(.bg-green-50, .bg-green-100, .bg-green-200):not(.bg-clip-text) {
+  background-image: none !important;
+  background-color: rgba(34, 197, 94, 0.14) !important;
+}
+
+[data-theme="dark"] :is(.bg-orange-50, .bg-orange-100, .bg-orange-200):not(.bg-clip-text) {
+  background-image: none !important;
+  background-color: rgba(249, 115, 22, 0.14) !important;
+}
+
+[data-theme="dark"] :is(.bg-purple-50, .bg-purple-100, .bg-purple-200, .bg-indigo-50, .bg-indigo-100, .bg-indigo-200):not(.bg-clip-text) {
+  background-image: none !important;
+  background-color: rgba(139, 92, 246, 0.16) !important;
+}
+
+[data-theme="dark"] :is(.bg-blue-50, .bg-blue-100, .bg-blue-200):not(.bg-clip-text) {
+  background-image: none !important;
+  background-color: rgba(59, 130, 246, 0.14) !important;
+}
+
+[data-theme="dark"] :is(.bg-red-50, .bg-red-100, .bg-yellow-50, .bg-yellow-100):not(.bg-clip-text) {
+  background-image: none !important;
+  background-color: rgba(239, 68, 68, 0.14) !important;
+}
+
+[data-theme="dark"] :is(.from-green-50, .from-green-100, .from-green-200, .to-green-50, .to-green-100, .to-green-200,
+                        .from-orange-50, .from-orange-100, .to-orange-50, .to-orange-100,
+                        .from-blue-50, .from-blue-100, .to-blue-50, .to-blue-100,
+                        .from-purple-50, .from-purple-100, .to-purple-50, .to-purple-100,
+                        .from-indigo-50, .from-indigo-100, .to-indigo-50, .to-indigo-100):not(.bg-clip-text) {
+  background-image: none !important;
+  background-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* =========================================================
+   DARK MODE: HOVER STATES (fixes white flash on hover)
+   ========================================================= */
+[data-theme="dark"] :is(
+  .hover\:bg-white, .hover\:bg-slate-50, .hover\:bg-slate-100, .hover\:bg-slate-200,
+  .hover\:bg-gray-50, .hover\:bg-gray-100, .hover\:bg-gray-200
+):hover {
+  background-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+[data-theme="dark"] :is(.hover\:bg-green-50, .hover\:bg-green-100):hover {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+}
+
+[data-theme="dark"] :is(.hover\:bg-indigo-50, .hover\:bg-indigo-100, .hover\:bg-purple-50, .hover\:bg-purple-100):hover {
+  background-color: rgba(139, 92, 246, 0.20) !important;
+}
+
+[data-theme="dark"] :is(.hover\:bg-red-50, .hover\:bg-red-100):hover {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+}
+
+[data-theme="dark"] :is(
+  .hover\:text-slate-700, .hover\:text-slate-800, .hover\:text-slate-900,
+  .hover\:text-gray-700, .hover\:text-gray-900, .hover\:text-black
+):hover {
+  color: #ffffff !important;
+}
+
+/* =========================================================
+   DARK MODE: TOGGLE SWITCHES (admin / seller)
+   ========================================================= */
+/* OFF state track */
+[data-theme="dark"] .peer:not(:checked) ~ :is(.bg-slate-200, .bg-slate-300, .bg-gray-200, .bg-gray-300) {
+  background-color: rgba(255, 255, 255, 0.20) !important;
+}
+
+/* ON state track stays solid green */
+[data-theme="dark"] .peer:checked ~ [class*="peer-checked:bg-green"] {
+  background-color: #16a34a !important;
+}
+
+/* Knob stays white */
+[data-theme="dark"] .peer ~ div::after,
+[data-theme="dark"] .peer ~ span::after {
+  background-color: #ffffff;
+}
+
+/* =========================================================
+   DARK MODE: TABLES, DIVIDERS, RINGS
+   ========================================================= */
+[data-theme="dark"] thead { background-color: rgba(255, 255, 255, 0.06); }
+[data-theme="dark"] tbody tr:hover { background-color: rgba(255, 255, 255, 0.05); }
+
+[data-theme="dark"] :is(.divide-slate-100, .divide-slate-200, .divide-gray-100, .divide-gray-200) > * {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] :is(.ring-slate-200, .ring-gray-200, .ring-slate-300, .ring-gray-300) {
+  --tw-ring-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* =========================================================
+   DARK MODE: MODALS, DROPDOWNS (need to be solid, not glass)
+   ========================================================= */
+[data-theme="dark"] .fixed .bg-white,
+[data-theme="dark"] .absolute.bg-white,
+[data-theme="dark"] .fixed.bg-white {
+  background-color: #141a2e !important;
+  backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* =========================================================
+   DARK MODE: CHARTS (recharts, admin / seller dashboards)
+   ========================================================= */
+[data-theme="dark"] .recharts-text,
+[data-theme="dark"] .recharts-cartesian-axis-tick-value { fill: #d8d0f0 !important; }
+[data-theme="dark"] .recharts-cartesian-grid line { stroke: rgba(255, 255, 255, 0.10) !important; }
+[data-theme="dark"] .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #141a2e !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* =========================================================
+   DARK MODE: BORDERS, INPUTS
+   ========================================================= */
+[data-theme="dark"] .border-gray-100,
+[data-theme="dark"] .border-gray-200,
+[data-theme="dark"] .border-gray-300,
+[data-theme="dark"] .border-slate-100,
+[data-theme="dark"] .border-slate-200,
+[data-theme="dark"] .border-slate-300,
+[data-theme="dark"] .border-slate-700 {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select { color: #f5f3ff; }
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: #b9aee0 !important; }
+
+[data-theme="dark"] select option {
+  background-color: #111a17;
+  color: #f5f3ff;
+}
+
+/* =========================================================
+   DARK MODE: FOOTER
+   ========================================================= */
+[data-theme="dark"] footer,
+[data-theme="dark"] footer.bg-white,
+[data-theme="dark"] footer .bg-white {
+  background-color: transparent !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+[data-theme="dark"] footer { border-top: 1px solid rgba(255, 255, 255, 0.10); }
+
+[data-theme="dark"] footer a[class*="rounded-full"],
+[data-theme="dark"] footer div[class*="rounded-full"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* =========================================================
+   DARK MODE: HERO "NEWS" PILL
+   ========================================================= */
+[data-theme="dark"] .bg-green-300 {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+  background-image: none !important;
+  border: 1px solid rgba(134, 239, 172, 0.35);
+  color: #dcfce7 !important;
+}
+
+[data-theme="dark"] .bg-green-300 .bg-green-600 {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+/* Text selection color */
+[data-theme="dark"] ::selection {
+  background: rgba(99, 102, 241, 0.55);
+  color: #ffffff;
 }

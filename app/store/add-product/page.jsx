@@ -6,6 +6,24 @@ import { toast } from "react-hot-toast"
 import { useAuth } from "@clerk/nextjs"
 import axios from "axios"
 
+// Shrinks the photo before it is sent to the AI, so the request is much smaller
+const compressImage = (file, maxSize = 800, quality = 0.7) =>
+    new Promise((resolve, reject) => {
+        const img = new window.Image()
+        const url = URL.createObjectURL(file)
+        img.onload = () => {
+            const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
+            const canvas = document.createElement("canvas")
+            canvas.width = Math.round(img.width * scale)
+            canvas.height = Math.round(img.height * scale)
+            canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height)
+            URL.revokeObjectURL(url)
+            resolve(canvas.toDataURL("image/jpeg", quality).split(",")[1])
+        }
+        img.onerror = reject
+        img.src = url
+    })
+
 export default function StoreAddProduct() {
 
     const categories = ['Electronics', 'Clothing', 'Home & Kitchen', 'Beauty & Health', 'Toys & Games', 'Sports & Outdoors', 'Books & Media', 'Food & Drink', 'Hobbies & Crafts', 'Others']
@@ -19,6 +37,7 @@ export default function StoreAddProduct() {
         category: "",
     })
     const [loading, setLoading] = useState(false)
+    const [aiUsed, setAiUsed] = useState(false)
 
     const { getToken } = useAuth()
 
@@ -27,49 +46,85 @@ export default function StoreAddProduct() {
         setProductInfo({ ...productInfo, [e.target.name]: e.target.value })
     }
 
-   const onSubmitHandler = async (e) => {
-    e.preventDefault()
-    try {
-        //  if no images are uploaded then return
-        if(!images[1] && !images[2] && !images[3] && !images[4]){
-            return toast.error('Please upload at least one image')
-        }
-        setLoading(true)
+    const handleImageUpload = async (key, file) => {
+        setImages(prev => ({ ...prev, [key]: file }))
 
-        const formData = new FormData()
-        formData.append('name', productInfo.name)
-        formData.append('description', productInfo.description)
-        formData.append('mrp', productInfo.mrp)
-        formData.append('price', productInfo.price)
-        formData.append('category', productInfo.category)
+        if (key === "1" && file && !aiUsed) {
+            try {
+                const base64String = await compressImage(file)
+                const token = await getToken()
 
-        // Adding Images to FormData
-        Object.keys(images).forEach((key)=>{
-            images[key] && formData.append('images', images[key])
-        })
-
-        const token = await getToken()
-        const { data } = await axios.post('/api/store/create/product', formData, {
-        headers: { Authorization: `Bearer ${token}` }})
-        toast.success(data.message)
-
-        // reset form
-        setProductInfo({
-            name: "",
-            description: "",
-            mrp: 0,
-            price: 0,
-            category: "",
-        })
-                // reset images
-                setImages({ 1: null, 2: null, 3: null, 4: null })
+                await toast.promise(
+                    axios.post('/api/store/ai', { base64Image: base64String, mimeType: "image/jpeg" },
+                        { headers: { Authorization: `Bearer ${token}` } }),
+                    {
+                        loading: "Analyzing image with AI...",
+                        success: (res) => {
+                            const data = res.data
+                            if (data.name && data.description) {
+                                setProductInfo(prev => ({
+                                    ...prev,
+                                    name: data.name,
+                                    description: data.description
+                                }))
+                                setAiUsed(true)
+                                return "AI filled product info 🎉"
+                            }
+                            return "AI could not analyze the image"
+                        },
+                        error: (err) => err?.response?.data?.error || err.message
+                    }
+                )
             } catch (error) {
-                toast.error(error?.response?.data?.error || error.message)
+                console.error(error)
             }
-            finally{
-                setLoading(false)
+        }
+    }
+
+    const onSubmitHandler = async (e) => {
+        e.preventDefault()
+        try {
+            //  if no images are uploaded then return
+            if (!images[1] && !images[2] && !images[3] && !images[4]) {
+                return toast.error('Please upload at least one image')
             }
-            }
+            setLoading(true)
+
+            const formData = new FormData()
+            formData.append('name', productInfo.name)
+            formData.append('description', productInfo.description)
+            formData.append('mrp', productInfo.mrp)
+            formData.append('price', productInfo.price)
+            formData.append('category', productInfo.category)
+
+            // Adding Images to FormData
+            Object.keys(images).forEach((key) => {
+                images[key] && formData.append('images', images[key])
+            })
+
+            const token = await getToken()
+            const { data } = await axios.post('/api/store/create/product', formData, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            toast.success(data.message)
+
+            // reset form
+            setProductInfo({
+                name: "",
+                description: "",
+                mrp: 0,
+                price: 0,
+                category: "",
+            })
+            // reset images
+            setImages({ 1: null, 2: null, 3: null, 4: null })
+        } catch (error) {
+            toast.error(error?.response?.data?.error || error.message)
+        }
+        finally {
+            setLoading(false)
+        }
+    }
 
     return (
         <form onSubmit={e => toast.promise(onSubmitHandler(e), { loading: "Adding Product..." })} className="text-slate-500 mb-28">
@@ -80,7 +135,7 @@ export default function StoreAddProduct() {
                 {Object.keys(images).map((key) => (
                     <label key={key} htmlFor={`images${key}`}>
                         <Image width={300} height={300} className='h-15 w-auto border border-slate-200 rounded cursor-pointer' src={images[key] ? URL.createObjectURL(images[key]) : assets.upload_area} alt="" />
-                        <input type="file" accept='image/*' id={`images${key}`} onChange={e => setImages({ ...images, [key]: e.target.files[0] })} hidden />
+                        <input type="file" accept='image/*' id={`images${key}`} onChange={e => handleImageUpload(key, e.target.files[0])} hidden />
                     </label>
                 ))}
             </div>
