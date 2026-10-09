@@ -22,9 +22,28 @@ export async function POST(request) {
         const price = Number(formData.get("price"));
         const category = formData.get("category");
         const images = formData.getAll("images");
+        const saleEndsAtRaw = formData.get("saleEndsAt");
 
         if (!name || !description || !mrp || !price || !category || images.length < 1) {
             return NextResponse.json({ error: "missing product details" }, { status: 400 });
+        }
+
+        // Optional: sale end date (needs MRP higher than price, and a future date)
+        let saleEndsAt = null;
+        if (saleEndsAtRaw) {
+            const date = new Date(saleEndsAtRaw);
+
+            if (isNaN(date.getTime())) {
+                return NextResponse.json({ error: "invalid sale end date" }, { status: 400 });
+            }
+            if (date <= new Date()) {
+                return NextResponse.json({ error: "sale end date must be in the future" }, { status: 400 });
+            }
+            if (mrp <= price) {
+                return NextResponse.json({ error: "for a sale, MRP must be higher than the price" }, { status: 400 });
+            }
+
+            saleEndsAt = date;
         }
 
         // Uploading images to ImageKit
@@ -54,7 +73,8 @@ export async function POST(request) {
                 price,
                 category,
                 images: imagesUrl,
-                storeId
+                storeId,
+                saleEndsAt
             }
         });
 

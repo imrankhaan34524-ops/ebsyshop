@@ -24,17 +24,18 @@ model User {
 
 // Required for creating a Product: name, description, mrp, price, images, category, storeId
 model Product {
-    id          String   @id @default(cuid())
+    id          String    @id @default(cuid())
     name        String
     description String
     mrp         Float
     price       Float
     images      String[]
     category    String
-    inStock     Boolean  @default(true)
+    inStock     Boolean   @default(true)
+    saleEndsAt  DateTime? // NEW: sale countdown end date
     storeId     String
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
 
     // Relations
     store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -52,6 +53,9 @@ enum OrderStatus {
 enum PaymentMethod {
     COD
     STRIPE
+    JAZZCASH       // NEW
+    EASYPAISA      // NEW
+    BANK_TRANSFER  // NEW
 }
 
 // Required for creating an Order: total, userId, storeId, addressId, isPaid, paymentMethod, isCouponUsed, coupon (JSON), orderItems (nested)
@@ -69,6 +73,17 @@ model Order {
     isCouponUsed  Boolean       @default(false)
     coupon        Json          @default("{}")
     orderItems    OrderItem[]
+
+    // NEW: manual payment details (JazzCash / Easypaisa / Bank)
+    paymentReference    String?
+    paymentSenderNumber String?
+
+    // NEW: order tracking
+    courier     String?
+    trackingId  String?
+    processingAt DateTime?
+    shippedAt   DateTime?
+    deliveredAt DateTime?
 
     // Relations
     user    User    @relation("BuyerRelation", fields: [userId], references: [id])
@@ -95,6 +110,7 @@ model Rating {
     id        String   @id @default(cuid())
     rating    Int
     review    String
+    images    String[] @default([]) // NEW: review photos
     userId    String
     productId String
     orderId   String

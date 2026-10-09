@@ -26,6 +26,8 @@ const compressImage = (file, maxSize = 800, quality = 0.7) =>
 
 export default function StoreAddProduct() {
 
+    const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$'
+
     const categories = ['Electronics', 'Clothing', 'Home & Kitchen', 'Beauty & Health', 'Toys & Games', 'Sports & Outdoors', 'Books & Media', 'Food & Drink', 'Hobbies & Crafts', 'Others']
 
     const [images, setImages] = useState({ 1: null, 2: null, 3: null, 4: null })
@@ -35,6 +37,7 @@ export default function StoreAddProduct() {
         mrp: 0,
         price: 0,
         category: "",
+        saleEndsAt: "",
     })
     const [loading, setLoading] = useState(false)
     const [aiUsed, setAiUsed] = useState(false)
@@ -88,6 +91,17 @@ export default function StoreAddProduct() {
             if (!images[1] && !images[2] && !images[3] && !images[4]) {
                 return toast.error('Please upload at least one image')
             }
+
+            // Sale end date checks (the field is optional)
+            if (productInfo.saleEndsAt) {
+                if (Number(productInfo.mrp) <= Number(productInfo.price)) {
+                    return toast.error('For a sale, Actual Price must be higher than Offer Price')
+                }
+                if (new Date(productInfo.saleEndsAt) <= new Date()) {
+                    return toast.error('Sale end date must be in the future')
+                }
+            }
+
             setLoading(true)
 
             const formData = new FormData()
@@ -96,6 +110,11 @@ export default function StoreAddProduct() {
             formData.append('mrp', productInfo.mrp)
             formData.append('price', productInfo.price)
             formData.append('category', productInfo.category)
+
+            // datetime-local gives local time, so convert it to a real date before sending
+            if (productInfo.saleEndsAt) {
+                formData.append('saleEndsAt', new Date(productInfo.saleEndsAt).toISOString())
+            }
 
             // Adding Images to FormData
             Object.keys(images).forEach((key) => {
@@ -115,6 +134,7 @@ export default function StoreAddProduct() {
                 mrp: 0,
                 price: 0,
                 category: "",
+                saleEndsAt: "",
             })
             // reset images
             setImages({ 1: null, 2: null, 3: null, 4: null })
@@ -152,14 +172,19 @@ export default function StoreAddProduct() {
 
             <div className="flex gap-5">
                 <label htmlFor="" className="flex flex-col gap-2 ">
-                    Actual Price ($)
+                    Actual Price ({currency})
                     <input type="number" name="mrp" onChange={onChangeHandler} value={productInfo.mrp} placeholder="0" rows={5} className="w-full max-w-45 p-2 px-4 outline-none border border-slate-200 rounded resize-none" required />
                 </label>
                 <label htmlFor="" className="flex flex-col gap-2 ">
-                    Offer Price ($)
+                    Offer Price ({currency})
                     <input type="number" name="price" onChange={onChangeHandler} value={productInfo.price} placeholder="0" rows={5} className="w-full max-w-45 p-2 px-4 outline-none border border-slate-200 rounded resize-none" required />
                 </label>
             </div>
+
+            <label htmlFor="" className="flex flex-col gap-2 my-6">
+                Sale ends at <span className="text-xs text-slate-400">Optional. Shows a countdown timer. Needs Actual Price higher than Offer Price.</span>
+                <input type="datetime-local" name="saleEndsAt" onChange={onChangeHandler} value={productInfo.saleEndsAt} className="w-full max-w-sm p-2 px-4 outline-none border border-slate-200 rounded" />
+            </label>
 
             <select onChange={e => setProductInfo({ ...productInfo, category: e.target.value })} value={productInfo.category} className="w-full max-w-sm p-2 px-4 my-6 outline-none border border-slate-200 rounded" required>
                 <option value="">Select a category</option>

@@ -3,6 +3,9 @@ import { auth } from "@clerk/nextjs/server"
 import Stripe from "stripe"
 import { prisma } from "@/lib/prisma"
 
+const MANUAL_METHODS = ["JAZZCASH", "EASYPAISA", "BANK_TRANSFER"]
+const ALLOWED_METHODS = ["COD", "STRIPE", ...MANUAL_METHODS]
+
 export async function POST(request) {
   try {
     const { userId, has } = await auth()
@@ -11,15 +14,45 @@ export async function POST(request) {
       return NextResponse.json({ error: "Not authorized" }, { status: 401 })
     }
 
-    const { addressId, items, couponCode, paymentMethod } = await request.json()
+    const {
+      addressId,
+      items,
+      couponCode,
+      paymentMethod,
+      paymentReference,
+      paymentSenderNumber,
+    } = await request.json()
 
     // Check if all required fields are present
     if (!addressId || !paymentMethod || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Missing order details" }, { status: 400 })
     }
 
-    if (!["COD", "STRIPE"].includes(paymentMethod)) {
+    if (!ALLOWED_METHODS.includes(paymentMethod)) {
       return NextResponse.json({ error: "Invalid payment method" }, { status: 400 })
+    }
+
+    // Manual payments (JazzCash / Easypaisa / Bank): need a Transaction ID
+    const isManual = MANUAL_METHODS.includes(paymentMethod)
+    const cleanReference = isManual ? String(paymentReference || "").trim() : null
+    const cleanSender = isManual ? String(paymentSenderNumber || "").trim() : null
+
+    if (isManual) {
+      if (cleanReference.length < 6) {
+        return NextResponse.json({ error: "Please enter a valid Transaction ID" }, { status: 400 })
+      }
+
+      // The same Transaction ID cannot be used on another order
+      const referenceUsed = await prisma.order.findFirst({
+        where: { paymentReference: cleanReference },
+      })
+
+      if (referenceUsed) {
+        return NextResponse.json(
+          { error: "This Transaction ID was already used on another order" },
+          { status: 400 }
+        )
+      }
     }
 
     // Address must belong to the logged in user
@@ -145,6 +178,8 @@ export async function POST(request) {
             addressId,
             total,
             paymentMethod,
+            paymentReference: cleanReference,
+            paymentSenderNumber: cleanSender,
             isCouponUsed: coupon ? true : false,
             coupon: couponData,
             orderItems: {
@@ -210,13 +245,17 @@ export async function POST(request) {
       }
     }
 
-    // Cash on delivery: clear the cart
+    // COD and manual payments: clear the cart
     await prisma.user.update({
       where: { id: userId },
       data: { cart: {} },
     })
 
-    return NextResponse.json({ message: "Orders Placed Successfully", orderIds, fullAmount })
+    const message = isManual
+      ? "Order placed. We will confirm your payment shortly."
+      : "Orders Placed Successfully"
+
+    return NextResponse.json({ message, orderIds, fullAmount })
   } catch (error) {
     console.error("Order error:", error)
     return NextResponse.json({ error: error.message || "Something went wrong" }, { status: 500 })

@@ -7,6 +7,8 @@ import { useState } from "react";
 import Image from "next/image";
 import Counter from "./Counter";
 import { useDispatch, useSelector } from "react-redux";
+import SaleBadge from "./SaleBadge";
+import SaleCountdown from "./SaleCountdown";
 
 const ProductDetails = ({ product }) => {
 
@@ -24,7 +26,12 @@ const ProductDetails = ({ product }) => {
         dispatch(addToCart({ productId }))
     }
 
-    const averageRating = product.rating.reduce((acc, item) => acc + item.rating, 0) / product.rating.length;
+    // 0 when there are no reviews yet (avoids dividing by zero)
+    const averageRating = product.rating.length
+        ? product.rating.reduce((acc, item) => acc + item.rating, 0) / product.rating.length
+        : 0;
+
+    const onSale = Number(product.mrp) > Number(product.price)
     
     return (
         <div className="flex max-lg:flex-col gap-12">
@@ -36,7 +43,8 @@ const ProductDetails = ({ product }) => {
                         </div>
                     ))}
                 </div>
-                <div className="flex justify-center items-center h-100 sm:size-113 bg-slate-100 rounded-lg ">
+                <div className="relative flex justify-center items-center h-100 sm:size-113 bg-slate-100 rounded-lg ">
+                    <SaleBadge price={product.price} mrp={product.mrp} className="absolute top-3 left-3 z-10 text-sm" />
                     <Image src={mainImage} alt="" width={250} height={250} />
                 </div>
             </div>
@@ -50,12 +58,15 @@ const ProductDetails = ({ product }) => {
                 </div>
                 <div className="flex items-start my-6 gap-3 text-2xl font-semibold text-slate-800">
                     <p> {currency}{product.price} </p>
-                    <p className="text-xl text-slate-500 line-through">{currency}{product.mrp}</p>
+                    {onSale && <p className="text-xl text-slate-500 line-through">{currency}{product.mrp}</p>}
                 </div>
-                <div className="flex items-center gap-2 text-slate-500">
-                    <TagIcon size={14} />
-                    <p>Save {((product.mrp - product.price) / product.mrp * 100).toFixed(0)}% right now</p>
-                </div>
+                {onSale && (
+                    <div className="flex items-center gap-2 text-slate-500">
+                        <TagIcon size={14} />
+                        <p>Save {((product.mrp - product.price) / product.mrp * 100).toFixed(0)}% right now</p>
+                    </div>
+                )}
+                <SaleCountdown endsAt={product.saleEndsAt} className="mt-4 text-sm" />
                 <div className="flex items-end gap-5 mt-10">
                     {
                         cart[productId] && (
