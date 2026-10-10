@@ -1,44 +1,45 @@
 'use client'
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { fetchProducts } from "@/lib/features/product/productSlice";
+import { fetchCart, uploadCart } from "@/lib/features/cart/cartSlice";
+import { fetchAddress } from "@/lib/features/address/addressSlice";
+import { fetchUserRatings } from "@/lib/features/rating/ratingSlice";
 import Banner from "@/components/Banner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import SellerCTA from "@/components/SellerCTA";
 import ChatWidget from "@/components/ChatWidget";
-import { useAuth, useUser } from "@clerk/nextjs";
-import { fetchCart } from "@/lib/features/cart/cartSlice";
-import { fetchAddress } from "@/lib/features/address/addressSlice";
-import { uploadCart } from "@/lib/features/cart/cartSlice";
-import { fetchUserRatings } from "@/lib/features/rating/ratingSlice";
 
 export default function PublicLayout({ children }) {
 
     const dispatch = useDispatch()
-    const {user} = useUser()
-    const {getToken} =useAuth()
-    const {cartItems} = useSelector((state)=>state.cart)
+    const { user } = useUser()
+    const { getToken } = useAuth()
+    const { cartItems } = useSelector((state) => state.cart)
+    const cartLoaded = useRef(false)
 
-    useEffect(()=>{
+    useEffect(() => {
         dispatch(fetchProducts({}))
-    },[])
+    }, [dispatch])
 
-     useEffect(()=>{
-        if (user){
-            dispatch(fetchCart({getToken}))
-            dispatch(fetchAddress({getToken}))
-            dispatch(fetchUserRatings({getToken}))
+    useEffect(() => {
+        if (user) {
+            Promise.resolve(dispatch(fetchCart({ getToken }))).finally(() => {
+                cartLoaded.current = true
+            })
+            dispatch(fetchAddress({ getToken }))
+            dispatch(fetchUserRatings({ getToken }))
         }
-    },[user])
-    useEffect(()=>{
-            if (user){
+    }, [user])
 
-                dispatch(uploadCart({getToken}))
-            }
-        },[cartItems])
-
+    useEffect(() => {
+        if (user && cartLoaded.current) {
+            dispatch(uploadCart({ getToken }))
+        }
+    }, [cartItems])
 
     return (
         <>
