@@ -1,6 +1,8 @@
+'use client'
 // components/SellerBanner.jsx
 // A full section for the home page that promotes "Create your store".
 import Link from 'next/link'
+import useDashboardInfo from '@/lib/useDashboardInfo'
 import { Store, ClipboardCheck, PackagePlus, ArrowRight } from 'lucide-react'
 
 const STEPS = [
@@ -10,6 +12,11 @@ const STEPS = [
 ]
 
 const SellerBanner = () => {
+    const dash = useDashboardInfo()
+
+    // People who already have a store do not need this banner
+    if (dash.hasStore) return null
+
     return (
         <section className='px-6 my-30 max-w-6xl mx-auto' aria-labelledby='sell-heading'>
             <div className='relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#052e16] via-[#14532d] to-[#1e1b4b] text-white p-8 sm:p-12'>

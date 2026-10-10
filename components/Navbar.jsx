@@ -1,11 +1,12 @@
 'use client'
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { PackageIcon, Search, ShoppingCart, Store, Menu, X, Crown } from "lucide-react";
+import { PackageIcon, Search, ShoppingCart, Store, Menu, X, Crown, LayoutDashboard, ShieldCheck, Clock } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import ThemeToggle from "@/components/ThemeToggle";
+import useDashboardInfo from "@/lib/useDashboardInfo";
 
 const LINKS = [
     { href: '/', label: 'Home' },
@@ -14,16 +15,34 @@ const LINKS = [
     { href: '/contact', label: 'Contact' },
 ]
 
+const GREEN = 'bg-gradient-to-r from-[#22c55e] to-[#16a34a] shadow-md shadow-[#22c55e]/25'
+const AMBER = 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] shadow-md shadow-[#f59e0b]/25'
+const RED = 'bg-gradient-to-r from-[#ef4444] to-[#dc2626] shadow-md shadow-[#ef4444]/25'
+
 const Navbar = () => {
 
     const router = useRouter()
     const pathname = usePathname()
+    const dash = useDashboardInfo()
 
     const [search, setSearch] = useState('')
     const [menuOpen, setMenuOpen] = useState(false)
     const cartCount = useSelector(state => state.cart.total)
 
     const isActive = (href) => (href === '/' ? pathname === '/' : pathname.startsWith(href))
+
+    // What the seller button should be for this visitor
+    const approved = dash.hasStore && dash.status === 'approved'
+    const rejected = dash.hasStore && dash.status === 'rejected'
+    const pending = dash.hasStore && !approved && !rejected
+
+    const seller = approved
+        ? { href: '/store', short: 'Store', long: 'My Store', Icon: LayoutDashboard, style: GREEN }
+        : pending
+            ? { href: '/create-store', short: 'Pending', long: 'Store pending', Icon: Clock, style: AMBER }
+            : rejected
+                ? { href: '/create-store', short: 'Rejected', long: 'Store rejected', Icon: X, style: RED }
+                : { href: '/create-store', short: 'Sell', long: 'Start selling', Icon: Store, style: GREEN }
 
     const handleSearch = (e) => {
         e.preventDefault()
@@ -44,6 +63,31 @@ const Navbar = () => {
         isActive(href)
             ? 'text-[#16a34a] dark:text-[#4ade80] font-medium'
             : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+
+    // Items inside the profile (avatar) menu
+    const userMenu = (
+        <UserButton.MenuItems>
+            <UserButton.Action
+                label="My Orders"
+                labelIcon={<PackageIcon size={16} />}
+                onClick={() => router.push('/orders')}
+            />
+            {approved && (
+                <UserButton.Action
+                    label="My Store Dashboard"
+                    labelIcon={<LayoutDashboard size={16} />}
+                    onClick={() => router.push('/store')}
+                />
+            )}
+            {dash.isAdmin && (
+                <UserButton.Action
+                    label="Admin Dashboard"
+                    labelIcon={<ShieldCheck size={16} />}
+                    onClick={() => router.push('/admin')}
+                />
+            )}
+        </UserButton.MenuItems>
+    )
 
     return (
         <nav className="site-navbar sticky top-0 z-40 bg-white dark:bg-slate-900 backdrop-blur-md transition-colors">
@@ -83,15 +127,31 @@ const Navbar = () => {
 
                         <ThemeToggle />
 
-                        {/* Main seller action */}
-                        <Link
-                            href="/create-store"
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-[#22c55e] to-[#16a34a] shadow-md shadow-[#22c55e]/25 hover:opacity-90 active:scale-95 transition whitespace-nowrap"
-                        >
-                            <Store size={15} />
-                            <span className="xl:hidden">Sell</span>
-                            <span className="hidden xl:inline">Start selling</span>
-                        </Link>
+                        {/* Seller button: Start selling / Store pending / My Store */}
+                        {dash.loading ? (
+                            <span className="h-9 w-24 rounded-full bg-black/5 dark:bg-white/10 animate-pulse" />
+                        ) : (
+                            <Link
+                                href={seller.href}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white hover:opacity-90 active:scale-95 transition whitespace-nowrap ${seller.style}`}
+                            >
+                                <seller.Icon size={15} />
+                                <span className="xl:hidden">{seller.short}</span>
+                                <span className="hidden xl:inline">{seller.long}</span>
+                            </Link>
+                        )}
+
+                        {/* Admin button (only for you) */}
+                        {dash.isAdmin && (
+                            <Link
+                                href="/admin"
+                                title="Admin dashboard"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium border border-indigo-400 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/10 active:scale-95 transition whitespace-nowrap"
+                            >
+                                <ShieldCheck size={15} />
+                                <span className="hidden xl:inline">Admin</span>
+                            </Link>
+                        )}
 
                         <Show when="signed-out">
                             <div className="flex items-center gap-1">
@@ -109,35 +169,25 @@ const Navbar = () => {
                         </Show>
                         <Show when="signed-in">
                             <UserButton afterSignOutUrl="/">
-                                <UserButton.MenuItems>
-                                    <UserButton.Action
-                                        label="My Orders"
-                                        labelIcon={<PackageIcon size={16} />}
-                                        onClick={() => router.push('/orders')}
-                                    />
-                                </UserButton.MenuItems>
+                                {userMenu}
                             </UserButton>
                         </Show>
                     </div>
 
                     {/* ---------- Mobile and tablet ---------- */}
                     <div className="lg:hidden flex items-center gap-2 shrink-0">
-                        <Link
-                            href="/create-store"
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-[#22c55e] to-[#16a34a] whitespace-nowrap"
-                        >
-                            <Store size={13} /> Sell
-                        </Link>
+                        {!dash.loading && (
+                            <Link
+                                href={seller.href}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-white whitespace-nowrap ${seller.style}`}
+                            >
+                                <seller.Icon size={13} /> {seller.short}
+                            </Link>
+                        )}
                         <ThemeToggle />
                         <Show when="signed-in">
                             <UserButton afterSignOutUrl="/">
-                                <UserButton.MenuItems>
-                                    <UserButton.Action
-                                        label="My Orders"
-                                        labelIcon={<PackageIcon size={16} />}
-                                        onClick={() => router.push('/orders')}
-                                    />
-                                </UserButton.MenuItems>
+                                {userMenu}
                             </UserButton>
                         </Show>
                         <button
@@ -183,9 +233,26 @@ const Navbar = () => {
                             <Crown size={18} /> Become a Plus member
                         </Link>
 
-                        <Link href="/create-store" className="mt-1 px-4 py-3 rounded-xl text-base font-medium flex items-center gap-2 bg-[#22c55e]/10 text-[#16a34a] dark:text-[#4ade80]">
-                            <Store size={18} /> Create your store
-                        </Link>
+                        {/* Seller row */}
+                        {approved ? (
+                            <Link href="/store" className="mt-1 px-4 py-3 rounded-xl text-base font-medium flex items-center gap-2 bg-[#22c55e]/10 text-[#16a34a] dark:text-[#4ade80]">
+                                <LayoutDashboard size={18} /> My Store Dashboard
+                            </Link>
+                        ) : pending || rejected ? (
+                            <Link href="/create-store" className="mt-1 px-4 py-3 rounded-xl text-base font-medium flex items-center gap-2 bg-[#f59e0b]/10 text-[#b45309] dark:text-[#fbbf24]">
+                                <Clock size={18} /> {rejected ? 'Store rejected, view details' : 'Store pending approval'}
+                            </Link>
+                        ) : (
+                            <Link href="/create-store" className="mt-1 px-4 py-3 rounded-xl text-base font-medium flex items-center gap-2 bg-[#22c55e]/10 text-[#16a34a] dark:text-[#4ade80]">
+                                <Store size={18} /> Create your store
+                            </Link>
+                        )}
+
+                        {dash.isAdmin && (
+                            <Link href="/admin" className="px-4 py-3 rounded-xl text-base font-medium flex items-center gap-2 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/10 transition">
+                                <ShieldCheck size={18} /> Admin Dashboard
+                            </Link>
+                        )}
 
                         <Show when="signed-out">
                             <div className="grid grid-cols-2 gap-3 mt-3">

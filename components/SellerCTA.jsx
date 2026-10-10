@@ -6,7 +6,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { X, Check, Rocket, Store } from 'lucide-react'
+import { X, Check, Rocket, Store, LayoutDashboard, Clock } from 'lucide-react'
+import useDashboardInfo from '@/lib/useDashboardInfo'
 
 const KEY = 'ebsy_seller_cta'
 const SNOOZE_MINUTES = 10   // after "Maybe later", the card stays hidden this long
@@ -21,11 +22,13 @@ const POINTS = [
 
 export default function SellerCTA() {
     const pathname = usePathname()
+    const dash = useDashboardInfo()
+    const hasStore = dash.hasStore
     const [mounted, setMounted] = useState(false) // card is in the page
     const [shown, setShown] = useState(false)     // card slid into view
 
     useEffect(() => {
-        if (pathname !== '/') return
+        if (pathname !== '/' || hasStore || dash.loading) return
 
         try {
             // Add ?seller=1 to the home page URL to always see the card (handy for testing)
@@ -50,7 +53,7 @@ export default function SellerCTA() {
 
         timer = setTimeout(open, DELAY_MS)
         return () => clearTimeout(timer)
-    }, [pathname])
+    }, [pathname, hasStore, dash.loading])
 
     const close = () => {
         setShown(false)
@@ -66,7 +69,7 @@ export default function SellerCTA() {
     }, [mounted])
 
     // The card (home page only)
-    if (mounted && pathname === '/') {
+    if (mounted && pathname === '/' && !hasStore) {
         return (
             <div
                 role='dialog'
@@ -126,6 +129,24 @@ export default function SellerCTA() {
 
     // The permanent button (all public pages except checkout related ones)
     if (HIDE_PILL_ON.some((p) => pathname.startsWith(p))) return null
+    if (dash.loading) return null
+
+    // Sellers get a shortcut to their own dashboard instead of "Sell on EbsyStore"
+    if (hasStore) {
+        const approved = dash.status === 'approved'
+        return (
+            <Link
+                href={approved ? '/store' : '/create-store'}
+                aria-label={approved ? 'Open my store dashboard' : 'Store status'}
+                className={`fixed z-40 left-4 bottom-20 sm:left-6 sm:bottom-6 flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-full text-sm font-semibold text-white shadow-lg hover:scale-105 active:scale-95 transition
+                ${approved ? 'bg-gradient-to-r from-[#22c55e] to-[#16a34a] shadow-[#22c55e]/30' : 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] shadow-[#f59e0b]/30'}`}
+            >
+                {approved ? <LayoutDashboard size={16} /> : <Clock size={16} />}
+                <span className='sm:hidden'>{approved ? 'My Store' : 'Pending'}</span>
+                <span className='hidden sm:inline'>{approved ? 'My Store Dashboard' : 'Store pending approval'}</span>
+            </Link>
+        )
+    }
 
     return (
         <Link

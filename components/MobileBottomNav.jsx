@@ -2,7 +2,8 @@
 // components/MobileBottomNav.jsx
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Store, ShoppingCart, User, PackageIcon } from 'lucide-react'
+import { Home, Store, ShoppingCart, User, PackageIcon, LayoutDashboard, ShieldCheck } from 'lucide-react'
+import useDashboardInfo from '@/lib/useDashboardInfo'
 import { Show, SignInButton, UserButton } from '@clerk/nextjs'
 import { useSelector } from 'react-redux'
 
@@ -15,6 +16,7 @@ const TABS = [
 const MobileBottomNav = () => {
     const pathname = usePathname()
     const router = useRouter()
+    const dash = useDashboardInfo()
     const cartCount = useSelector((state) => state.cart.total)
 
     const isActive = (href) => (href === '/' ? pathname === '/' : pathname.startsWith(href))
@@ -67,6 +69,20 @@ const MobileBottomNav = () => {
                                     labelIcon={<PackageIcon size={16} />}
                                     onClick={() => router.push('/orders')}
                                 />
+                                {dash.hasStore && dash.status === 'approved' && (
+                                    <UserButton.Action
+                                        label='My Store Dashboard'
+                                        labelIcon={<LayoutDashboard size={16} />}
+                                        onClick={() => router.push('/store')}
+                                    />
+                                )}
+                                {dash.isAdmin && (
+                                    <UserButton.Action
+                                        label='Admin Dashboard'
+                                        labelIcon={<ShieldCheck size={16} />}
+                                        onClick={() => router.push('/admin')}
+                                    />
+                                )}
                             </UserButton.MenuItems>
                         </UserButton>
                         Account
