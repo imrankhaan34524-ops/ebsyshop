@@ -5,6 +5,9 @@ import { fetchProducts } from "@/lib/features/product/productSlice";
 import Banner from "@/components/Banner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MobileBottomNav from "@/components/MobileBottomNav";
+import SellerCTA from "@/components/SellerCTA";
+import ChatWidget from "@/components/ChatWidget";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { fetchCart } from "@/lib/features/cart/cartSlice";
 import { fetchAddress } from "@/lib/features/address/addressSlice";
@@ -39,10 +42,16 @@ export default function PublicLayout({ children }) {
 
     return (
         <>
-            <Banner />
-            <Navbar />
-            {children}
-            <Footer />
+            {/* pb-16 keeps content clear of the mobile bottom bar */}
+            <div className="pb-16 sm:pb-0">
+                <Banner />
+                <Navbar />
+                {children}
+                <Footer />
+            </div>
+            <MobileBottomNav />
+            <SellerCTA />
+            <ChatWidget />
         </>
     );
 }

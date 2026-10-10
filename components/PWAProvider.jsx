@@ -37,7 +37,7 @@ const PWAProvider = () => {
     if (!installEvent || dismissed) return null
 
     return (
-        <div className='fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-80 z-50 flex items-center gap-3 rounded-2xl bg-[#141a2e] text-white p-4 shadow-xl border border-white/10'>
+        <div data-pwa-card className='fixed bottom-20 sm:bottom-6 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:w-96 z-50 flex items-center gap-3 rounded-2xl bg-[#141a2e] text-white p-4 shadow-xl border border-white/10'>
             <div className='flex-1'>
                 <p className='text-sm font-semibold'>Install EbsyStore</p>
                 <p className='text-xs text-[#cbd5e1]'>Faster shopping, right from your home screen.</p>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import Stripe from "stripe"
 import { prisma } from "@/lib/prisma"
+import { getShippingFee } from "@/lib/shipping"
 
 const MANUAL_METHODS = ["JAZZCASH", "EASYPAISA", "BANK_TRANSFER"]
 const ALLOWED_METHODS = ["COD", "STRIPE", ...MANUAL_METHODS]
@@ -149,6 +150,13 @@ export async function POST(request) {
       })
     }
 
+    // Free shipping rule: Plus members, or a cart subtotal at/above the threshold
+    const cartSubtotal = products.reduce(
+      (sum, p) => sum + p.price * quantities.get(p.id),
+      0
+    )
+    const shippingFee = getShippingFee(cartSubtotal, isPlusMember)
+
     let fullAmount = 0
     let isShippingFeeAdded = false
     const createOperations = []
@@ -162,8 +170,8 @@ export async function POST(request) {
         total -= (total * coupon.discount) / 100
       }
 
-      if (!isPlusMember && !isShippingFeeAdded) {
-        total += 199
+      if (shippingFee > 0 && !isShippingFeeAdded) {
+        total += shippingFee
         isShippingFeeAdded = true
       }
 

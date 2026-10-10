@@ -15,10 +15,12 @@ const Footer = () => {
         {
             title: "PRODUCTS",
             links: [
-                { text: "Earphones", path: '/shop', icon: null },
-                { text: "Headphones", path: '/shop', icon: null },
-                { text: "Smartphones", path: '/shop', icon: null },
-                { text: "Laptops", path: '/shop', icon: null },
+                // These open the shop with the search already filled in
+                { text: "Earphones", path: '/shop?search=earphones', icon: null },
+                { text: "Headphones", path: '/shop?search=headphones', icon: null },
+                { text: "Smartphones", path: '/shop?search=smartphone', icon: null },
+                { text: "Smartwatches", path: '/shop?search=smartwatch', icon: null },
+                { text: "Laptops", path: '/shop?search=laptop', icon: null },
             ]
         },
         {
@@ -51,12 +53,15 @@ const Footer = () => {
         }
     ];
 
+    // Add your real profile links in .env. An icon only shows when its link is set.
     const socialIcons = [
-        { icon: FacebookIcon, link: "https://www.facebook.com" },
-        { icon: InstagramIcon, link: "https://www.instagram.com" },
-        { icon: TwitterIcon, link: "https://twitter.com" },
-        { icon: LinkedinIcon, link: "https://www.linkedin.com" },
-    ]
+        { name: "Facebook", icon: FacebookIcon, link: process.env.NEXT_PUBLIC_FACEBOOK_URL },
+        { name: "Instagram", icon: InstagramIcon, link: process.env.NEXT_PUBLIC_INSTAGRAM_URL },
+        { name: "Twitter", icon: TwitterIcon, link: process.env.NEXT_PUBLIC_TWITTER_URL },
+        { name: "LinkedIn", icon: LinkedinIcon, link: process.env.NEXT_PUBLIC_LINKEDIN_URL },
+    ].filter((item) => item.link)
+
+    const paymentMethods = ["Cash on Delivery", "JazzCash", "Easypaisa", "Bank Transfer", "Card"]
 
     return (
         <footer className="mx-6 bg-white">
@@ -67,12 +72,32 @@ const Footer = () => {
                             <span className="text-green-600">Ebsy</span>Store<span className="text-green-600 text-5xl leading-0">.</span>
                         </Link>
                         <p className="max-w-[410px] mt-6 text-sm">Welcome to Ebsystore, your ultimate destination for the latest and smartest gadgets. From smartphones and smartwatches to essential accessories, we bring you the best in innovation all in one place.</p>
-                        <div className="flex items-center gap-3 mt-5">
-                            {socialIcons.map((item, i) => (
-                                <Link href={item.link} key={i} className="flex items-center justify-center w-10 h-10 bg-slate-100 hover:scale-105 hover:border border-slate-300 transition rounded-full">
-                                    <item.icon />
-                                </Link>
-                            ))}
+
+                        {socialIcons.length > 0 && (
+                            <div className="flex items-center gap-3 mt-5">
+                                {socialIcons.map((item) => (
+                                    <a
+                                        href={item.link}
+                                        key={item.name}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={`EbsyStore on ${item.name}`}
+                                        className="flex items-center justify-center w-10 h-10 bg-slate-100 hover:scale-105 hover:border border-slate-300 transition rounded-full"
+                                    >
+                                        <item.icon />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Trust: accepted payments */}
+                        <div className="mt-6">
+                            <p className="text-xs font-medium text-slate-700 mb-2">We accept</p>
+                            <div className="flex flex-wrap gap-2">
+                                {paymentMethods.map((method) => (
+                                    <span key={method} className="text-[11px] px-2.5 py-1 rounded-full border border-slate-300">{method}</span>
+                                ))}
+                            </div>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 w-full lg:w-[65%] gap-8 text-sm">
@@ -92,7 +117,7 @@ const Footer = () => {
                     </div>
                 </div>
                 <div className="flex flex-col md:flex-row items-center justify-between gap-3 py-4 text-sm text-slate-500">
-                    <p>Copyright 2026 © EbsyStore. All rights reserved.</p>
+                    <p>Copyright {new Date().getFullYear()} © EbsyStore. All rights reserved.</p>
                     <div className="flex flex-wrap justify-center gap-x-5 gap-y-1">
                         <Link href="/privacy-policy" className="hover:underline">Privacy</Link>
                         <Link href="/terms-of-service" className="hover:underline">Terms</Link>

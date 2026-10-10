@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Show, SignInButton, useAuth, useUser } from "@clerk/nextjs"
 import axios from 'axios';
 import PaymentMethods, { MANUAL_METHODS } from './PaymentMethods';
+import { getShippingFee, FREE_SHIPPING_THRESHOLD } from '@/lib/shipping';
 
 const StepTitle = ({ n, children }) => (
     <div className='flex items-center gap-2 mb-2'>
@@ -44,7 +45,9 @@ const OrderSummary = ({ totalPrice, items, layout = 'side' }) => {
 
     // Amount the customer has to pay (same math as the server)
     const discountAmount = coupon ? (coupon.discount / 100) * totalPrice : 0
-    const shipping = isPlusMember ? 0 : 199
+    const shipping = getShippingFee(totalPrice, isPlusMember)
+    const leftForFree = Math.max(0, FREE_SHIPPING_THRESHOLD - totalPrice)
+    const freeProgress = Math.min(100, (totalPrice / FREE_SHIPPING_THRESHOLD) * 100)
     const payable = Math.max(0, totalPrice - discountAmount + shipping)
     const money = (n) => `${currency}${Number(n).toLocaleString('en-PK', { maximumFractionDigits: 2 })}`
 
@@ -187,7 +190,7 @@ const OrderSummary = ({ totalPrice, items, layout = 'side' }) => {
                         <div className='flex justify-between'>
                             <span className='flex items-center gap-1.5'><Truck size={13} /> Shipping</span>
                             <span className='font-medium text-slate-700'>
-                                <Show when={{ plan: 'members' }} fallback={money(199)}>Free</Show>
+                                {shipping === 0 ? 'Free' : money(shipping)}
                             </span>
                         </div>
                         {coupon && (
@@ -204,6 +207,20 @@ const OrderSummary = ({ totalPrice, items, layout = 'side' }) => {
                             <span className='font-semibold text-slate-700'>{money(payable)}</span>
                         </div>
                     </div>
+
+                    {/* Free shipping progress */}
+                    {!isPlusMember && (
+                        <div className='mt-3 text-xs'>
+                            {leftForFree > 0 ? (
+                                <p>Add <span className='font-semibold text-slate-700'>{money(leftForFree)}</span> more for <span className='text-[#16a34a] dark:text-[#86efac] font-medium'>free shipping</span></p>
+                            ) : (
+                                <p className='text-[#16a34a] dark:text-[#86efac] font-medium'>You unlocked free shipping</p>
+                            )}
+                            <div className='mt-1.5 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden'>
+                                <div className='h-full rounded-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] transition-all duration-500' style={{ width: `${freeProgress}%` }} />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Coupon */}
                     {!coupon && (
